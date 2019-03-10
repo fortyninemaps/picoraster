@@ -3,22 +3,9 @@ import itertools
 import numpy
 from osgeo import gdal
 
-from .part import Part
 from .geotransform import GeoTransform
 from .pipeline import Pipeline
-
-GDT_TO_NUMPY = {
-    gdal.GDT_Byte: numpy.uint8,
-    gdal.GDT_UInt16: numpy.uint16,
-    gdal.GDT_UInt32: numpy.uint32,
-    gdal.GDT_Int16: numpy.int16,
-    gdal.GDT_Int32: numpy.int32,
-    gdal.GDT_Float32: numpy.float32,
-    gdal.GDT_Float64: numpy.float64,
-    gdal.GDT_CFloat64: numpy.complex64,
-}
-
-NUMPY_TO_GDT = {v: k for k, v in GDT_TO_NUMPY.items()}
+from .types import NUMPY_TO_GDT
 
 class Band(object):
     def __init__(self, source, pipeline=None):
@@ -99,36 +86,3 @@ def compute_extent(parts):
         xmax = part_bounds[2] if xmax is None else max(part_bounds[2], xmax)
         ymax = part_bounds[3] if ymax is None else max(part_bounds[3], ymax)
     return (xmin, ymin, xmax, ymax)
-
-class FileInput(object):
-    def __init__(self, filename):
-        self.filename = filename
-        ds = gdal.Open(self.filename)
-        try:
-            self._geotransform_array = ds.GetGeoTransform()
-            self._projection = ds.GetProjection()
-            self.raster_size = (ds.RasterXSize, ds.RasterYSize)
-        finally:
-            ds = None
-
-    def part(self, j, i, nx, ny):
-        """ Read (nx, ny) pixels, starting from x0, y0 in the top left """
-        gt0, gt1, gt2, gt3, gt4, gt5 = self._geotransform_array
-        new_geotransform = GeoTransform(gt0 + j*gt1 + i*gt4,
-                                        gt1,
-                                        gt2,
-                                        gt3 + i*gt5 + j*gt2,
-                                        gt4,
-                                        gt5)
-
-        dataset = gdal.Open(self.filename)
-        try:
-            band = dataset.GetRasterBand(1)
-            dt = GDT_TO_NUMPY[band.DataType]
-            buf = numpy.empty([ny, nx], dt)
-            band.ReadAsArray(j, i, nx, ny, buf_obj=buf)
-        finally:
-            band = None
-            dataset = None
-
-        return Part(new_geotransform, self._projection, buf)

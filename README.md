@@ -1,25 +1,24 @@
 # picoraster
 
-Lazy Python library for raster band manipulation.
+Small Python library for processing large raster images.
+
+Currently a work in progress.
 
 ## Example usage
 
 ```python
-bands = []
+source = AWSLandsat8Source("LC08_L1TP_139045_20170304_20170316_01_T1", band="8")
 
-for input in input_list:
-    band = Raster(input) \
-        .and_then(Resize(extents)) \
-        .and_then(HistogramAdjust()) \
-        .and_then(Reproject(crs))
-    bands.append(end)
-
-multiband = Merge(bands)
+# Lazily create a band and build a description of processing steps
+band = Band(source) \
+    .and_then(Resize(extents)) \
+    .and_then(HistogramAdjust()) \
+    .and_then(Reproject(crs))
 
 # Forces computation
-array = multiband.render_to_array()
+array = band.render_to_array()
 
-multiband.render_to_file("output.tif")
+band.render_to_file("output.tif")
 ```
 
 ## Installation

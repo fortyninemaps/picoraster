@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="picoraster",
-    version="0.0.1",
+    version="0.0.2",
     author="Nat Wilson",
     author_email="natw@fortyninemaps.com",
     description="Lazy raster band processing",
