@@ -38,3 +38,7 @@ pip install GDAL==$(gdal-config --version) --global-option=build_ext --global-op
 
 Finally,
 `pip install picoraster`
+
+## Running tests
+
+`python -m src.tests`
