@@ -14,14 +14,3 @@ class Instruction(object):
         """ Apply instruction to this chunk of data. Return a list of new
         parts. """
         raise NotImplementedError
-
-class LoadSource(Instruction):
-    """ Somewhat special (because it mutates) instruction that reads from a
-    source into the array. """
-
-    def __init__(self, source):
-        self.source = source
-
-    def apply(self, part):
-        self.source.read_into(part)
-        return [part]

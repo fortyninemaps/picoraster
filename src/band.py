@@ -3,19 +3,18 @@ import itertools
 import numpy
 from osgeo import gdal
 
-from .instruction import LoadSource
 from .part import Part
 
 class Band(object):
     def __init__(self, source, pipeline=None):
         # The pipeline describes how this band is created.
         self.source = source
-        self._pipeline = pipeline if pipeline is not None else Pipeline([LoadSource(source)])
+        self._pipeline = pipeline if pipeline is not None else Pipeline()
 
     def _parts(self):
         """ Returns and iterator of Part objects """
         nx, ny = self.source.raster_size
-        xsize, ysize = 2048, 2048
+        xsize, ysize = 1024, 1024
         x, y = 0, 0
         while y < ny - 1:
             while x < nx - 1:
@@ -146,18 +145,14 @@ class FileInput(object):
             gt4,
             gt5,
         ]
-        return Part(new_geotransform, self._projection, j, i, numpy.empty([ny, nx], numpy.uint16))
 
-    def read_into(self, part):
-        ysize, xsize = part.data.shape
+        buf = numpy.empty([ny, nx], numpy.uint16)
         dataset = gdal.Open(self.filename)
         try:
             band = dataset.GetRasterBand(1)
-            band.ReadAsArray(part._j,
-                             part._i,
-                             xsize,
-                             ysize,
-                             buf_obj=part.data)
+            band.ReadAsArray(j, i, nx, ny, buf_obj=buf)
         finally:
             band = None
             dataset = None
+
+        return Part(new_geotransform, self._projection, buf)

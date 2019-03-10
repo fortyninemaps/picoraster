@@ -2,11 +2,9 @@ from osgeo import gdal
 
 class Part(object):
 
-    def __init__(self, geotransform, projection, j, i, data):
+    def __init__(self, geotransform, projection, data):
         self.geotransform = geotransform
         self.projection = projection
-        self._j = j
-        self._i = i
         self._data = data
 
     @property
