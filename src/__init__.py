@@ -1,3 +1,5 @@
+name = "picoraster"
+
 from .band import Band, FileInput
 from .pipeline import Pipeline
 from .part import Part
