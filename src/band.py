@@ -5,6 +5,7 @@ from osgeo import gdal
 
 from .part import Part
 from .geotransform import GeoTransform
+from .pipeline import Pipeline
 
 class Band(object):
     def __init__(self, source, pipeline=None):
@@ -85,30 +86,6 @@ def compute_extent(parts):
         xmax = part_bounds[2] if xmax is None else max(part_bounds[2], xmax)
         ymax = part_bounds[3] if ymax is None else max(part_bounds[3], ymax)
     return (xmin, ymin, xmax, ymax)
-
-def combine_to_array(parts):
-    print("done")
-
-class Pipeline(object):
-
-    def __init__(self, steps=None):
-        self._instructions = steps if steps else []
-
-    @property
-    def instructions(self):
-        return [instr for instr in self._instructions]
-
-    def and_then(self, instruction):
-        return Pipeline(self.instructions + [instruction])
-
-    def apply(self, part):
-        parts = [part]
-        for instr in self.instructions:
-            new_parts = []
-            for p in parts:
-                new_parts.extend(instr.apply(p))
-            parts = new_parts
-        return parts
 
 class FileInput(object):
     def __init__(self, filename):
