@@ -18,10 +18,9 @@ class Part(object):
 
     @property
     def extent(self):
-        a, b, c, d, e, f = self.geotransform
         ny, nx = self.data.shape
-        top_left = (a, d)
-        bot_right = (a + nx * b + ny * c, d + nx * e + ny * f)
+        top_left = (self.geotransform.a, self.geotransform.d)
+        bot_right = self.geotransform.apply(nx, ny)
 
         return (
             min(top_left[0], bot_right[0]),

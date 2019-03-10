@@ -4,6 +4,7 @@ import numpy
 from osgeo import gdal
 
 from .part import Part
+from .geotransform import GeoTransform
 
 class Band(object):
     def __init__(self, source, pipeline=None):
@@ -45,20 +46,20 @@ class Band(object):
         datatype = gdal.GDT_UInt16 # FIXME
 
         raster_extent = compute_extent(parts)
-        gt1 = parts[0].geotransform[1]
-        gt2 = parts[0].geotransform[2]
-        gt4 = parts[0].geotransform[4]
-        gt5 = parts[0].geotransform[5]
-        geotransform = [raster_extent[0], gt1, gt2, raster_extent[3], gt4, gt5]
-        top_left_index = invert(geotransform, raster_extent[0], raster_extent[1])
-        bot_right_index = invert(geotransform, raster_extent[2], raster_extent[3])
+        gt1 = parts[0].geotransform.b
+        gt2 = parts[0].geotransform.c
+        gt4 = parts[0].geotransform.e
+        gt5 = parts[0].geotransform.f
+        geotransform = GeoTransform(raster_extent[0], gt1, gt2, raster_extent[3], gt4, gt5)
+        top_left_index = geotransform.invert(raster_extent[0], raster_extent[1])
+        bot_right_index = geotransform.invert(raster_extent[2], raster_extent[3])
         xsize = abs(bot_right_index[0] - top_left_index[0])
         ysize = abs(bot_right_index[1] - top_left_index[1])
 
         driver = gdal.GetDriverByName(fmt)
         try:
             dataset = driver.Create(filename, xsize, ysize, nbands, datatype)
-            dataset.SetGeoTransform(geotransform)
+            dataset.SetGeoTransform(geotransform.to_list())
             dataset.SetProjection(parts[0].projection)
         finally:
             driver = None
@@ -66,7 +67,7 @@ class Band(object):
         try:
             band = dataset.GetRasterBand(1)
             for part in parts:
-                xoff, yoff = invert(geotransform, part.geotransform[0], part.geotransform[3])
+                xoff, yoff = geotransform.invert(part.geotransform.a, part.geotransform.d)
                 ysize, xsize = part.data.shape
                 band.WriteRaster(xoff, yoff, xsize, ysize, part.data.tobytes())
             band.FlushCache()
@@ -74,20 +75,6 @@ class Band(object):
             band = None
             dataset = None
         return self
-
-def invert(geotransform, x, y):
-    """ compute the (j, i) index of a cell given a geotransform, where the
-    top left corner of the cell is at (x, y) """
-    a, b, c, d, e, f = geotransform
-
-    if e == 0:
-        i = (b * y - b * d - e * x + e * a) / (b * f - e * c)
-        j = (x - a - i * c) / b
-    else:
-        i = (e * x - e * a - b * y + b * d) / (e * c - b * f)
-        j = (y - d - i * f) / e
-
-    return int(j), int(i)
 
 def compute_extent(parts):
     xmin, ymin, xmax, ymax = None, None, None, None
@@ -128,7 +115,7 @@ class FileInput(object):
         self.filename = filename
         ds = gdal.Open(self.filename)
         try:
-            self._geotransform = ds.GetGeoTransform()
+            self._geotransform_array = ds.GetGeoTransform()
             self._projection = ds.GetProjection()
             self.raster_size = (ds.RasterXSize, ds.RasterYSize)
         finally:
@@ -136,15 +123,13 @@ class FileInput(object):
 
     def part(self, j, i, nx, ny):
         """ Read (nx, ny) pixels, starting from x0, y0 in the top left """
-        gt0, gt1, gt2, gt3, gt4, gt5 = self._geotransform
-        new_geotransform = [
-            gt0 + j * gt1 + i * gt4,
-            gt1,
-            gt2,
-            gt3 + i * gt5 + j * gt2,
-            gt4,
-            gt5,
-        ]
+        gt0, gt1, gt2, gt3, gt4, gt5 = self._geotransform_array
+        new_geotransform = GeoTransform(gt0 + j*gt1 + i*gt4,
+                                        gt1,
+                                        gt2,
+                                        gt3 + i*gt5 + j*gt2,
+                                        gt4,
+                                        gt5)
 
         buf = numpy.empty([ny, nx], numpy.uint16)
         dataset = gdal.Open(self.filename)
