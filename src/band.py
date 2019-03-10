@@ -7,6 +7,19 @@ from .part import Part
 from .geotransform import GeoTransform
 from .pipeline import Pipeline
 
+GDT_TO_NUMPY = {
+    gdal.GDT_Byte: numpy.uint8,
+    gdal.GDT_UInt16: numpy.uint16,
+    gdal.GDT_UInt32: numpy.uint32,
+    gdal.GDT_Int16: numpy.int16,
+    gdal.GDT_Int32: numpy.int32,
+    gdal.GDT_Float32: numpy.float32,
+    gdal.GDT_Float64: numpy.float64,
+    gdal.GDT_CFloat64: numpy.complex64,
+}
+
+NUMPY_TO_GDT = {v: k for k, v in GDT_TO_NUMPY.items()}
+
 class Band(object):
     def __init__(self, source, pipeline=None):
         # The pipeline describes how this band is created.
@@ -44,7 +57,7 @@ class Band(object):
             return self
 
         nbands = 1 # FIXME
-        datatype = gdal.GDT_UInt16 # FIXME
+        datatype = NUMPY_TO_GDT[parts[0].numpy_datatype]
 
         raster_extent = compute_extent(parts)
         gt1 = parts[0].geotransform.b
@@ -108,10 +121,11 @@ class FileInput(object):
                                         gt4,
                                         gt5)
 
-        buf = numpy.empty([ny, nx], numpy.uint16)
         dataset = gdal.Open(self.filename)
         try:
             band = dataset.GetRasterBand(1)
+            dt = GDT_TO_NUMPY[band.DataType]
+            buf = numpy.empty([ny, nx], dt)
             band.ReadAsArray(j, i, nx, ny, buf_obj=buf)
         finally:
             band = None

@@ -12,9 +12,8 @@ class Part(object):
         return self._data
 
     @property
-    def datatype(self):
-        # FIXME
-        return gdal.GDT_Int16
+    def numpy_datatype(self):
+        return self.data.dtype.type
 
     @property
     def extent(self):
