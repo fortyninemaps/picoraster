@@ -23,7 +23,12 @@ band.render_to_file("output.tif")
 
 ## Installation
 
-Installing GDAL is the most challenging part. Installing directly from PyPI is unlikely to work. The best choices are one of the following:
+Installing GDAL is the most challenging part. Installing directly from PyPI is historically unlikely to work.
+
+First, install numpy:
+`pip install numpy`
+
+Then, choose one of the following:
 
 - install with a system package manager
     - Ubuntu: `sudo apt install libgdal-dev`
